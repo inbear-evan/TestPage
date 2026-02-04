@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NFC Story</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .name { font-size: 28px; font-weight: 700; margin: 0 0 12px 0; }
+    .story { font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
+    .meta { margin-top: 20px; font-size: 12px; opacity: 0.7; }
+    .card { max-width: 720px; padding: 20px; border: 1px solid #ddd; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="name" class="name"></h1>
+    <div id="story" class="story"></div>
+    <div id="meta" class="meta"></div>
+  </div>
+
+  <script>
+    // 1) index별 데이터 (일단 3개)
+    const DATA = {
+      1: { name: "첫번째 이름", story: "첫번째 스토리 내용입니다.\n여러 줄도 가능합니다." },
+      2: { name: "두번째 이름", story: "두번째 스토리 내용입니다." },
+      3: { name: "세번째 이름", story: "세번째 스토리 내용입니다." },
+    };
+
+    // 2) query param 읽기
+    const params = new URLSearchParams(location.search);
+    const indexStr = params.get("index");
+    const index = Number(indexStr);
+
+    // 3) 표시
+    const item = DATA[index];
+    const nameEl = document.getElementById("name");
+    const storyEl = document.getElementById("story");
+    const metaEl = document.getElementById("meta");
+
+    if (!item) {
+      nameEl.textContent = "잘못된 index";
+      storyEl.textContent = "URL의 ?index= 값을 1~3으로 맞춰주세요.";
+      metaEl.textContent = "";
+    } else {
+      nameEl.textContent = item.name;   // 첫번째 줄: 이름
+      storyEl.textContent = item.story; // 아래: 스토리
+      metaEl.textContent = `index=${index} / ${new Date().toLocaleString()}`;
+    }
+
+    // 4) 기록 저장(localStorage)
+    // - 같은 index를 여러 번 찍어도 기록이 쌓이도록 로그로 저장
+    const STORAGE_KEY = "nfc_scan_logs_v1";
+
+    function loadLogs() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLogs(logs) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    }
+
+    // item이 있을 때만 저장(원하면 item 없어도 저장 가능)
+    if (item) {
+      const logs = loadLogs();
+      logs.unshift({
+        ts: Date.now(),
+        index,
+        url: location.href,
+        name: item.name
+      });
+      // 로그가 너무 커지는 것 방지 (최근 500개만 유지)
+      if (logs.length > 500) logs.length = 500;
+      saveLogs(logs);
+    }
+  </script>
+</body>
+</html>
